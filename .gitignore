@@ -1,4 +1,8 @@
 play
 build/*
 vgcore*
+ast.dot
+ast.png
+nfa.dot
+nfa.png
 
