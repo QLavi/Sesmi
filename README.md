@@ -1,5 +1,5 @@
 # Sesmi
-Regex Parser and NFA simulator
+Regex Parser and NFA generator
 
 ## Build
 ```bash
