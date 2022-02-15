@@ -139,7 +139,7 @@ AST_Node* pattern_to_ast(char* str, size_t size) {
 }
 
 #define dwrite(...) fprintf(fptr, __VA_ARGS__)
-void write_ast_in_dot(FILE* fptr, AST_Node* node) {
+void write_node_ids(FILE* fptr, AST_Node* node) {
   if(node == NULL) return;
 
   if(node->left != NULL) {
@@ -149,6 +149,14 @@ void write_ast_in_dot(FILE* fptr, AST_Node* node) {
     dwrite("\t%c_%i -> %c_%i\n", node->type, node->id, node->right->type, node->right->id);
   }
 
-  write_ast_in_dot(fptr, node->left);
-  write_ast_in_dot(fptr, node->right);
+  write_node_ids(fptr, node->left);
+  write_node_ids(fptr, node->right);
+}
+
+void write_ast_in_dot(AST_Node* node) {
+  FILE* fptr = fopen("ast.dot", "w");
+  dwrite("digraph AST {\n\tnode [shape=circle]\n");
+  write_node_ids(fptr, node);
+  dwrite("}\n");
+  fclose(fptr);
 }

@@ -9,4 +9,4 @@ struct AST_Node {
 };
 
 AST_Node* pattern_to_ast(char* str, size_t size);
-void write_ast_in_dot(FILE* fptr, AST_Node* node);
+void write_ast_in_dot(AST_Node* node);
