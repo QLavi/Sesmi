@@ -1,8 +1,18 @@
 #pragma once
 
+typedef enum {
+  NODE_CHAR,
+  NODE_ALTER,
+  NODE_CONCAT,
+  NODE_QMARK,
+  NODE_PLUS,
+  NODE_STAR
+} Node_Type;
+
 typedef struct AST_Node AST_Node;
 struct AST_Node {
-  int type;
+  Node_Type type;
+  char c;
   int id;
   AST_Node* left;
   AST_Node* right;

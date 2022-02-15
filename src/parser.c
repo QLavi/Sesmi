@@ -49,9 +49,10 @@ void consume(Token_Type type, char* err_descr) {
 }
 
 int id = 0;
-AST_Node* make_node(int type, AST_Node* left, AST_Node* right) {
+AST_Node* make_node(Node_Type type, char c, AST_Node* left, AST_Node* right) {
   AST_Node* node = ALLOC(AST_Node, 1);
   node->type = type;
+  node->c = c;
   node->id = id;
   id += 1;
   node->left = left;
@@ -106,7 +107,7 @@ AST_Node* expression(Precedence precedence) {
 
 AST_Node* charc(void) {
   char c = parser.prev.c;
-  return make_node(c, NULL, NULL);
+  return make_node(NODE_CHAR, c, NULL, NULL);
 }
 AST_Node* group(void) {
   AST_Node* node = expression(PREC_NONE);
@@ -116,19 +117,19 @@ AST_Node* group(void) {
 AST_Node* infix(AST_Node* node) {
   switch(parser.prev.type) {
     case TOKEN_DOT:
-      return make_node('c', node, expression(PREC_CONCAT));
+      return make_node(NODE_CONCAT, 'c', node, expression(PREC_CONCAT));
     case TOKEN_VBAR:
-      return make_node('v' , node, expression(PREC_ALTER));
+      return make_node(NODE_ALTER, 'v', node, expression(PREC_ALTER));
   }
 }
 AST_Node* postfix(AST_Node* node) {
   switch(parser.prev.type) {
     case TOKEN_QMARK:
-      return make_node('q', node, NULL);
+      return make_node(NODE_QMARK, 'q', node, NULL);
     case TOKEN_PLUS:
-      return make_node('p', node, NULL);
+      return make_node(NODE_PLUS, 'p', node, NULL);
     case TOKEN_STAR:
-      return make_node('s', node, NULL);
+      return make_node(NODE_STAR, 's', node, NULL);
   }
 }
 
@@ -143,10 +144,10 @@ void write_node_ids(FILE* fptr, AST_Node* node) {
   if(node == NULL) return;
 
   if(node->left != NULL) {
-    dwrite("\t%c_%i -> %c_%i\n", node->type, node->id, node->left->type, node->left->id);
+    dwrite("\t%c_%i -> %c_%i\n", node->c, node->id, node->left->c, node->left->id);
   }
   if(node->right != NULL) {
-    dwrite("\t%c_%i -> %c_%i\n", node->type, node->id, node->right->type, node->right->id);
+    dwrite("\t%c_%i -> %c_%i\n", node->c, node->id, node->right->c, node->right->id);
   }
 
   write_node_ids(fptr, node->left);
