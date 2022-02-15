@@ -2,14 +2,9 @@
 
 #ifdef ALLOC_WHENEVER_FREE_AT_LAST
 size_t** allocations;
-size_t alloc_capacity = 0;
-size_t alloc_count = 0;
+int alloc_capacity = 0;
+int alloc_count = 0;
 #endif
-
-void maintain_allocations_for_me(void) {
-  alloc_capacity = 8;
-  allocations = malloc(sizeof(size_t*) * alloc_capacity);
-}
 
 void* x_alloc(void* old_ptr, size_t size) {
     if(old_ptr != NULL && size == 0) {
@@ -20,24 +15,27 @@ void* x_alloc(void* old_ptr, size_t size) {
     if(size != 0) {
         void* new_ptr = realloc(old_ptr, size);
 
-#ifdef ALLOC_WHENEVER_FREE_AT_LAST
-        if(alloc_capacity -1 < alloc_count) {
-          alloc_capacity = alloc_capacity * 2;
-          allocations = realloc(allocations, alloc_capacity);
-        }
-        allocations[alloc_count] = new_ptr;
-        alloc_count+= 1;
-#endif
         if(new_ptr == NULL) {
-            fprintf(stderr, "Out_Of_Memory_Error!\nAborted");
+            fprintf(stderr, "Out_Of_Memory_Error!\nAborted\n");
             exit(1);
         }
+#ifdef ALLOC_WHENEVER_FREE_AT_LAST
+        if(alloc_capacity -1 < alloc_count) {
+          alloc_capacity = alloc_capacity < 8 ? 8 : alloc_capacity * 2;
+          allocations = realloc(allocations, sizeof(size_t*) * alloc_capacity);
+        }
+        allocations[alloc_count++] = (size_t*)new_ptr;
+#endif
         return new_ptr;
     }
 #ifdef ALLOC_WHENEVER_FREE_AT_LAST
-    for(int x = 0; x < alloc_count; x++) {
+    printf("Allocation Count: %zu\n", alloc_count);
+    int x = 0;
+    for(;x < alloc_count; x++) {
       free(allocations[x]);
     }
+    printf("Freed Blocks Count: %zu\n", x);
+
     free(allocations);
     alloc_count = 0;
     alloc_capacity = 0;
