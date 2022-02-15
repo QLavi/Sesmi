@@ -14,5 +14,5 @@ AST and NFA visualization is done by generating code for Graphviz's Dot Language
 
 TODO:
 - [x] generate NFA using AST
-- [] do subset construction to generate DFA from NFA
-- [] simulate DFA to do pattern matching
+- [ ] do subset construction to generate DFA from NFA
+- [ ] simulate DFA to do pattern matching
