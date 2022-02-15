@@ -34,8 +34,8 @@ void generate_nfa(AST_Node* node) {
   switch(node->type) {
     case NODE_CHAR:
     {
-      NFA_State* start = make_state(node->c, 'e', NULL, NULL);
-      NFA_State* final = make_state('e', 'e', NULL, NULL);
+      NFA_State* start = make_state(node->c, '.', NULL, NULL);
+      NFA_State* final = make_state('.', '.', NULL, NULL);
       start->next[0] = final;
 
       NFA_Fragment frag = {start, final};
@@ -56,8 +56,8 @@ void generate_nfa(AST_Node* node) {
       NFA_Fragment f1 = POP();
       NFA_Fragment f0 = POP();
 
-      NFA_State* start = make_state('e', 'e', f0.start, f1.start);
-      NFA_State* final = make_state('e', 'e', NULL, NULL);
+      NFA_State* start = make_state('.', '.', f0.start, f1.start);
+      NFA_State* final = make_state('.', '.', NULL, NULL);
 
       f0.final->next[0] = final;
       f1.final->next[0] = final;
@@ -69,8 +69,8 @@ void generate_nfa(AST_Node* node) {
     {
       NFA_Fragment f0 = POP();
 
-      NFA_State* start = make_state('e', 'e', f0.start, NULL);
-      NFA_State* final = make_state('e', 'e', NULL, NULL);
+      NFA_State* start = make_state('.', '.', f0.start, NULL);
+      NFA_State* final = make_state('.', '.', NULL, NULL);
       f0.final->next[0] = final;
       start->next[1] = final;
 
@@ -81,9 +81,9 @@ void generate_nfa(AST_Node* node) {
     {
       NFA_Fragment f0 = POP();
 
-      NFA_State* state = make_state('e', 'e', f0.start, NULL);
+      NFA_State* state = make_state('.', '.', f0.start, NULL);
       f0.final->next[0] = f0.start;
-      f0.final->next[1] = make_state('e', 'e', NULL, NULL);
+      f0.final->next[1] = make_state('.', '.', NULL, NULL);
 
       NFA_Fragment frag = {state, f0.final->next[1]};
       PUSH(frag);
@@ -92,8 +92,8 @@ void generate_nfa(AST_Node* node) {
     {
       NFA_Fragment f0 = POP();
 
-      NFA_State* state = make_state('e', 'e', f0.start, NULL);
-      NFA_State* final = make_state('e', 'e', NULL, NULL);
+      NFA_State* state = make_state('.', '.', f0.start, NULL);
+      NFA_State* final = make_state('.', '.', NULL, NULL);
       f0.final->next[0] = f0.start;
       f0.final->next[1] = final;
       state->next[1] = final;
