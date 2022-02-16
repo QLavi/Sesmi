@@ -3,7 +3,7 @@
 
 typedef struct {
   NFA_State* start;
-  NFA_State* final;
+  NFA_State** final;
 } NFA_Fragment;
 
 NFA_Fragment stack[128];
@@ -34,11 +34,8 @@ void generate_nfa(AST_Node* node) {
   switch(node->type) {
     case NODE_CHAR:
     {
-      NFA_State* start = make_state(node->c, '.', NULL, NULL);
-      NFA_State* final = make_state('.', '.', NULL, NULL);
-      start->next[0] = final;
-
-      NFA_Fragment frag = {start, final};
+      NFA_State* state = make_state(node->c, 'e', NULL, NULL);
+      NFA_Fragment frag = {state, &state->next[0]};
       PUSH(frag);
     } break;
     case NODE_CONCAT:
@@ -46,7 +43,12 @@ void generate_nfa(AST_Node* node) {
       NFA_Fragment f1 = POP();
       NFA_Fragment f0 = POP();
 
-      f0.final->next[0] = f1.start;
+      if(*f0.final == NULL) {
+        *f0.final = f1.start;
+      }
+      else {
+        (*f0.final)->next[0] = f1.start;
+      }
 
       NFA_Fragment frag = {f0.start, f1.final};
       PUSH(frag);
@@ -56,49 +58,68 @@ void generate_nfa(AST_Node* node) {
       NFA_Fragment f1 = POP();
       NFA_Fragment f0 = POP();
 
-      NFA_State* start = make_state('.', '.', f0.start, f1.start);
-      NFA_State* final = make_state('.', '.', NULL, NULL);
+      NFA_State* split = make_state('e', 'e', f0.start, f1.start);
+      NFA_State* merge = make_state('e', 'e', NULL, NULL);
 
-      f0.final->next[0] = final;
-      f1.final->next[0] = final;
+      if(*f0.final == NULL && *f1.final == NULL) {
+        *f0.final = make_state('e', 'e', merge, NULL);
+        *f1.final = make_state('e', 'e', merge, NULL);
+      }
+      else {
+        (*f0.final)->next[0] = make_state('e', 'e', merge, NULL);
+        (*f1.final)->next[0] = make_state('e', 'e', merge, NULL);
+      }
 
-      NFA_Fragment frag = {start, final};
-      PUSH(frag);
-    } break;
-    case NODE_QMARK:
-    {
-      NFA_Fragment f0 = POP();
-
-      NFA_State* start = make_state('.', '.', f0.start, NULL);
-      NFA_State* final = make_state('.', '.', NULL, NULL);
-      f0.final->next[0] = final;
-      start->next[1] = final;
-
-      NFA_Fragment frag = {start, final};
-      PUSH(frag);
-    } break;
-    case NODE_PLUS:
-    {
-      NFA_Fragment f0 = POP();
-
-      NFA_State* state = make_state('.', '.', f0.start, NULL);
-      f0.final->next[0] = f0.start;
-      f0.final->next[1] = make_state('.', '.', NULL, NULL);
-
-      NFA_Fragment frag = {state, f0.final->next[1]};
+      NFA_Fragment frag = {split, &merge->next[0]};
       PUSH(frag);
     } break;
     case NODE_STAR:
     {
       NFA_Fragment f0 = POP();
 
-      NFA_State* state = make_state('.', '.', f0.start, NULL);
-      NFA_State* final = make_state('.', '.', NULL, NULL);
-      f0.final->next[0] = f0.start;
-      f0.final->next[1] = final;
-      state->next[1] = final;
+      NFA_State* start = make_state('e', 'e', f0.start, NULL);
+      NFA_State* end = make_state('e', 'e', NULL, NULL);
 
-      NFA_Fragment frag = {state, final};
+      if(*f0.final == NULL) {
+        *f0.final = make_state('e', 'e', end, f0.start);
+      }
+      else {
+        (*f0.final)->next[0] = end;
+        (*f0.final)->next[1] = f0.start;
+      }
+      start->next[1] = end;
+
+      NFA_Fragment frag = {start, &end->next[0]};
+      PUSH(frag);
+    } break;
+    case NODE_QMARK:
+    {
+      NFA_Fragment f0 = POP();
+      NFA_State* split = make_state('e', 'e', f0.start, NULL);
+      NFA_State* merge = make_state('e', 'e', NULL, NULL);
+      split->next[1] = merge;
+
+      if(*f0.final == NULL) {
+        *f0.final = make_state('e', 'e', merge, NULL);
+      }
+      else {
+        (*f0.final)->next[0] = make_state('e', 'e', merge, NULL);
+      }
+
+      NFA_Fragment frag = {split, &merge->next[0]};
+      PUSH(frag);
+    } break;
+    case NODE_PLUS:
+    {
+      NFA_Fragment f0 = POP();
+      
+      if(*f0.final == NULL) {
+        *f0.final = make_state('e', 'e', f0.start, NULL);
+      } else {
+        (*f0.final)->next[0] = make_state('e', 'e', f0.start, NULL);
+      }
+
+      NFA_Fragment frag = {f0.start, &(*f0.final)->next[1]};
       PUSH(frag);
     } break;
   }
@@ -107,6 +128,9 @@ void generate_nfa(AST_Node* node) {
 NFA_State* ast_to_nfa(AST_Node* node) {
   generate_nfa(node);
   NFA_Fragment frag = POP();
+  if(*frag.final == NULL) {
+    *frag.final = make_state('e', 'e', NULL, NULL);
+  }
   return frag.start;
 }
 
