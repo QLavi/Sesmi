@@ -1,3 +1,4 @@
+#include <string.h>
 #include "io_and_mem.h"
 #include "parser.h"
 #include "nfa.h"
@@ -8,7 +9,8 @@ int main(int argc, char** argv) {
     exit(1);
   }
   char* string = argv[2];
-  size_t size = strlen(argv[1]);
+  char* pattern = argv[1];
+  size_t size = strlen(pattern);
   AST_Node* node = pattern_to_ast(pattern, size);
   write_ast_in_dot(node);
 
