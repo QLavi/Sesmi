@@ -5,6 +5,7 @@ Regex Parser and NFA generator
 ```bash
 $ make
 $ make dot # Run the program and generate AST and NFA
+$ python3 run_tests.py # Run regex tests and check if it crashes or not
 ```
 ## Notes
 Sesmi Parses Regular expressions (only chars, |, ?, +, * operators supported)\
