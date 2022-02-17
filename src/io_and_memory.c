@@ -29,12 +29,12 @@ void* x_alloc(void* old_ptr, size_t size) {
         return new_ptr;
     }
 #ifdef ALLOC_WHENEVER_FREE_AT_LAST
-    printf("Allocation Count: %zu\n", alloc_count);
+    /* printf("Allocation Count: %zu\n", alloc_count); */
     int x = 0;
     for(;x < alloc_count; x++) {
       free(allocations[x]);
     }
-    printf("Freed Blocks Count: %zu\n", x);
+    /* printf("Freed Blocks Count: %zu\n", x); */
 
     free(allocations);
     alloc_count = 0;
