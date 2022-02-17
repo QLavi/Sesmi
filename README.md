@@ -1,5 +1,5 @@
 # Sesmi
-Regex Parser and NFA generator
+Regex Parser and NFA generator and simulator
 
 ## Build
 ```bash
@@ -13,7 +13,8 @@ and generates Abstract Syntax Tree which later generates Non-Deterministic Finit
 for the regex.
 AST and NFA visualization is done by generating code for Graphviz's Dot Language
 
-TODO:
+## TODO:
 - [x] generate NFA using AST
+- [x] simulate NFA to do pattern matchin (can only match for `.` at the moment)
 - [ ] do subset construction to generate DFA from NFA
 - [ ] simulate DFA to do pattern matching
