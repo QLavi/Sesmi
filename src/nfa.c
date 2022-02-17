@@ -1,6 +1,11 @@
 #include "io_and_mem.h"
 #include "nfa.h"
 
+enum {
+  STATE_SPLIT = 256,
+  STATE_MATCH
+};
+
 typedef struct {
   NFA_State* start;
   NFA_State** final;
@@ -12,16 +17,11 @@ NFA_Fragment* stk_ptr = stack;
 #define POP() (*--stk_ptr)
 
 int state_id = 0;
-NFA_State* make_state(char c0, char c1, NFA_State* s0, NFA_State* s1) {
-  NFA_State* state = ALLOC(NFA_State, 1);
-  state->c[0] = c0;
-  state->c[1] = c1;
-  state->id = state_id;
+NFA_State* make_state(int c, NFA_State* s0, NFA_State* s1) {
   state_id += 1;
+  NFA_State* state = ALLOC(NFA_State, 1);
+  state->c = c;
   state->last_list = 0;
-  state->is_final = false;
-  state->reached[0] = false;
-  state->reached[1] = false;
   state->next[0] = s0;
   state->next[1] = s1;
   return state;
@@ -36,7 +36,8 @@ void generate_nfa(AST_Node* node) {
   switch(node->type) {
     case NODE_CHAR:
     {
-      NFA_State* state = make_state(node->c, 'e', NULL, NULL);
+      NFA_State* state = make_state(node->c, NULL, NULL);
+      state->next[0] = make_state(0, NULL, NULL);
       NFA_Fragment frag = {state, &state->next[0]};
       PUSH(frag);
     } break;
@@ -44,13 +45,7 @@ void generate_nfa(AST_Node* node) {
     {
       NFA_Fragment f1 = POP();
       NFA_Fragment f0 = POP();
-
-      if(*f0.final == NULL) {
-        *f0.final = f1.start;
-      }
-      else {
-        (*f0.final)->next[0] = f1.start;
-      }
+      *f0.final = f1.start;
 
       NFA_Fragment frag = {f0.start, f1.final};
       PUSH(frag);
@@ -60,66 +55,45 @@ void generate_nfa(AST_Node* node) {
       NFA_Fragment f1 = POP();
       NFA_Fragment f0 = POP();
 
-      NFA_State* split = make_state('e', 'e', f0.start, f1.start);
-      NFA_State* merge = make_state('e', 'e', NULL, NULL);
+      NFA_State* split = make_state(STATE_SPLIT, f0.start, f1.start);
+      NFA_State* state = make_state(0, NULL, NULL);
 
-      if(*f0.final == NULL && *f1.final == NULL) {
-        *f0.final = make_state('e', 'e', merge, NULL);
-        *f1.final = make_state('e', 'e', merge, NULL);
-      }
-      else {
-        (*f0.final)->next[0] = make_state('e', 'e', merge, NULL);
-        (*f1.final)->next[0] = make_state('e', 'e', merge, NULL);
-      }
+      *f0.final = state;
+      *f1.final = state;
 
-      NFA_Fragment frag = {split, &merge->next[0]};
+      NFA_Fragment frag = {split, &state};
       PUSH(frag);
     } break;
     case NODE_STAR:
     {
       NFA_Fragment f0 = POP();
+      NFA_State* split = make_state(STATE_SPLIT, f0.start, NULL);
+      NFA_State* state = make_state(STATE_SPLIT, f0.start, NULL);
+      state->next[1] = make_state(0, NULL, NULL);
 
-      NFA_State* start = make_state('e', 'e', f0.start, NULL);
-      NFA_State* end = make_state('e', 'e', NULL, NULL);
+      split->next[1] = state;
+      *f0.final = state;
 
-      if(*f0.final == NULL) {
-        *f0.final = make_state('e', 'e', end, f0.start);
-      }
-      else {
-        (*f0.final)->next[0] = end;
-        (*f0.final)->next[1] = f0.start;
-      }
-      start->next[1] = end;
-
-      NFA_Fragment frag = {start, &end->next[0]};
+      NFA_Fragment frag = {f0.start, &state->next[1]};
       PUSH(frag);
     } break;
     case NODE_QMARK:
     {
       NFA_Fragment f0 = POP();
-      NFA_State* split = make_state('e', 'e', f0.start, NULL);
-      NFA_State* merge = make_state('e', 'e', NULL, NULL);
-      split->next[1] = merge;
+      NFA_State* split = make_state(STATE_SPLIT, f0.start, NULL);
+      NFA_State* state = make_state(0, NULL, NULL);
 
-      if(*f0.final == NULL) {
-        *f0.final = make_state('e', 'e', merge, NULL);
-      }
-      else {
-        (*f0.final)->next[0] = make_state('e', 'e', merge, NULL);
-      }
+      *f0.final = state;
+      split->next[1] = state;
 
-      NFA_Fragment frag = {split, &merge->next[0]};
+      NFA_Fragment frag = {split, &state};
       PUSH(frag);
     } break;
     case NODE_PLUS:
     {
       NFA_Fragment f0 = POP();
-      
-      if(*f0.final == NULL) {
-        *f0.final = make_state('e', 'e', f0.start, NULL);
-      } else {
-        (*f0.final)->next[0] = make_state('e', 'e', f0.start, NULL);
-      }
+      *f0.final = make_state(STATE_SPLIT, f0.start, NULL);
+      (*f0.final)->next[1] = make_state(0, NULL, NULL);
 
       NFA_Fragment frag = {f0.start, &(*f0.final)->next[1]};
       PUSH(frag);
@@ -127,20 +101,17 @@ void generate_nfa(AST_Node* node) {
   }
 }
 
-NFA_State final_state = {.c[0] = 'F', .is_final = true};
+NFA_State final_state = {STATE_MATCH};
 NFA_State* ast_to_nfa(AST_Node* node) {
   generate_nfa(node);
-  NFA_Fragment frag = POP();
 
-  final_state.id = state_id;
   state_id += 1;
-
-  if(*frag.final == NULL) {
-    *frag.final = &final_state;
-  }
+  NFA_Fragment frag = POP();
+  **frag.final = final_state;
   return frag.start;
 }
 
+#if 0
 #define dwrite(...) fprintf(fptr, __VA_ARGS__)
 void write_state_ids(FILE* fptr, NFA_State* state) {
   if(state == NULL) return;
@@ -164,6 +135,7 @@ void write_nfa_in_dot(NFA_State* state) {
   dwrite("}\n");
   fclose(fptr);
 }
+#endif
 
 typedef struct {
   NFA_State** states;
@@ -177,9 +149,6 @@ State_List* start_list(NFA_State* state) {
   State_List* list = ALLOC(State_List, 1);
   list->states = ALLOC(NFA_State*, state_id);
   list->count = 0;
-  if(state == NULL) {
-    return list;
-  }
   list_id += 1;
   add_state(list, state);
   return list;
@@ -189,7 +158,7 @@ void add_state(State_List* list, NFA_State* state) {
   if(state == NULL || state->last_list == list_id) return;
 
   state->last_list = list_id;
-  if(state->next[0] != NULL && state->next[1] != NULL) {
+  if(state->c == STATE_SPLIT) {
     add_state(list, state->next[0]);
     add_state(list, state->next[1]);
     return;
@@ -198,18 +167,14 @@ void add_state(State_List* list, NFA_State* state) {
   list->count += 1;
 }
 
-void nfa_step(State_List* current_states, State_List* next_states, int c) {
+void nfa_step(State_List* current_states, State_List* next_states, char c) {
   list_id += 1;
   next_states->count = 0;
 
   for(int x = 0; x < current_states->count; x++) {
     NFA_State* state = current_states->states[x];
-
-    if(state->c[0] == c) {
+    if(state->c == c) {
       add_state(next_states, state->next[0]);
-    }
-    if(state->c[1] == c){
-      add_state(next_states, state->next[1]);
     }
   }
 }
@@ -221,7 +186,8 @@ bool simulate_nfa(NFA_State* start, char* match) {
 
   char* p = match;
   for(;*p; p++) {
-    nfa_step(current_states, next_states, *p);
+    char c = *p & 0xFF;
+    nfa_step(current_states, next_states, c);
 
     State_List* tmp = current_states;
     current_states = next_states;
@@ -229,7 +195,7 @@ bool simulate_nfa(NFA_State* start, char* match) {
   }
   
   for(int x = 0; x < current_states->count; x++) {
-    if(current_states->states[x] == &final_state) {
+    if(current_states->states[x]->c == STATE_MATCH) {
       return 1;
     }
   }

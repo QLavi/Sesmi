@@ -5,11 +5,8 @@
 
 typedef struct NFA_State NFA_State;
 struct NFA_State {
-  char c[2];
-  int id;
-  int last_list; // is in accepting state or not
-  bool is_final;
-  bool reached[2];
+  int c;
+  int last_list;
   NFA_State* next[2];
 };
 

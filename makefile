@@ -20,10 +20,8 @@ build/%.o: src/%.c | build
 ${TARGET}: ${O_FILES}
 	${CC} ${LNK_FLAGS} -o $@ $^ ${LIB}
 
-dot: ast.dot nfa.dot
-	./${TARGET}
+dot: ast.dot
 	dot -Tpng ast.dot > ast.png
-	dot -Tpng nfa.dot > nfa.png
 
 clean: ${O_FILES}
 	rm $^ ${TARGET}
