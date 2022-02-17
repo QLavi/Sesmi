@@ -1,5 +1,5 @@
-a.b.c
-(a.b)|(c.d)
-(a.b)*
-((a.b|c.d)*)?
-(a.b)*.(h.e.l.l.o|b.y.e)?.(2.7|8)
+a.b.c abc 1
+(a.b)|(c.d) ab 1
+(a.b)* a 0
+a*.b? aab 1
+(a.a)|(b*.c?) a 0
