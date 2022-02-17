@@ -13,8 +13,6 @@ typedef struct {
 
 NFA_Fragment stack[128];
 NFA_Fragment* stk_ptr = stack;
-#define PUSH(x) (*stk_ptr++ = x)
-#define POP() (*--stk_ptr)
 
 int state_id = 0;
 NFA_State* make_state(int c, NFA_State* s0, NFA_State* s1) {
@@ -27,6 +25,8 @@ NFA_State* make_state(int c, NFA_State* s0, NFA_State* s1) {
   return state;
 }
 
+#define PUSH(x) (*stk_ptr++ = x)
+#define POP() (*--stk_ptr)
 void generate_nfa(AST_Node* node) {
   if(node == NULL) return;
 
@@ -110,6 +110,8 @@ NFA_State* ast_to_nfa(AST_Node* node) {
   **frag.final = final_state;
   return frag.start;
 }
+#undef PUSH
+#undef POP
 
 #if 0
 #define dwrite(...) fprintf(fptr, __VA_ARGS__)
