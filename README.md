@@ -7,6 +7,7 @@ $ make
 $ make dot # Run the program and generate AST
 $ python3 run_tests.py # Run regex tests and check if it crashes or not
 ```
+
 ## Notes
 Sesmi Parses Regular expressions (only chars, |, ?, +, * operators supported)\
 and generates Abstract Syntax Tree which later generates Non-Deterministic Finite Automaton\
